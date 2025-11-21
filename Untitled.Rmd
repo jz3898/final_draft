@@ -115,12 +115,12 @@ p2
 ```
 
 ```{r combined-view, fig.width=10, fig.height=8}
-# Combined subplot showing both metrics - FIXED VERSION
+# Combined subplot showing both metrics side by side
 combined_plot <- subplot(
   p1 %>% layout(showlegend = TRUE),
   p2 %>% layout(showlegend = FALSE),
   nrows = 2,
-  shareX = FALSE,  # Changed from TRUE to FALSE so x-axis labels show
+  shareX = FALSE,
   titleY = TRUE,
   margin = 0.08
 ) %>%
@@ -130,52 +130,11 @@ combined_plot <- subplot(
       font = list(size = 18)
     ),
     height = 800,
-    xaxis = list(title = "Year"),  # Add x-axis title for top plot
-    xaxis2 = list(title = "Year")  # Add x-axis title for bottom plot
+    xaxis = list(title = "Year"),
+    xaxis2 = list(title = "Year")
   )
 
 combined_plot
-```
-
-```{r seasonal-comparison, fig.width=10, fig.height=6}
-# Additional analysis: Seasonal PM2.5 comparison
-pm25_seasonal <- pm25_asthma_clean %>%
-  select(year, borough, pm25_summer, pm25_winter) %>%
-  pivot_longer(cols = c(pm25_summer, pm25_winter),
-               names_to = "season",
-               values_to = "pm25_value") %>%
-  mutate(season = recode(season,
-                         "pm25_summer" = "Summer",
-                         "pm25_winter" = "Winter"))
-
-p3 <- pm25_seasonal %>%
-  plot_ly(x = ~year, y = ~pm25_value, color = ~borough,
-          linetype = ~season,
-          type = 'scatter', mode = 'lines',
-          colors = viridis(5),
-          hovertemplate = paste(
-            '<b>%{fullData.name}</b><br>',
-            'Season: %{fullData.linetype}<br>',
-            'Year: %{x}<br>',
-            'PM2.5: %{y:.2f} μg/m³<br>',
-            '<extra></extra>'
-          )) %>%
-  layout(
-    title = list(
-      text = "<b>Seasonal PM2.5 Variations by Borough</b>",
-      font = list(size = 16)
-    ),
-    xaxis = list(title = "Year"),
-    yaxis = list(title = "PM2.5 (μg/m³)"),
-    legend = list(
-      title = list(text = '<b>Borough & Season</b>'),
-      x = 1.02,
-      y = 1
-    ),
-    margin = list(r = 200)
-  )
-
-p3
 ```
 
 ```{r trend-analysis}
@@ -199,4 +158,364 @@ trend_summary <- trends %>%
 
 knitr::kable(trend_summary, digits = 3,
              caption = "Average Annual Changes and Correlation by Borough")
+```
+
+```{r dual-axis-manhattan, fig.width=10, fig.height=5}
+# Manhattan dual-axis plot
+manhattan_data <- pm25_asthma_clean %>% filter(borough == "Manhattan")
+
+plot_ly(manhattan_data) %>%
+  add_trace(
+    x = ~year, 
+    y = ~pm25_annual,
+    name = "PM2.5",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#440154", width = 3),
+    marker = list(size = 8),
+    yaxis = "y1",
+    hovertemplate = paste(
+      '<b>PM2.5</b><br>',
+      'Year: %{x}<br>',
+      'PM2.5: %{y:.2f} μg/m³<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  add_trace(
+    x = ~year,
+    y = ~asthma_rate,
+    name = "Asthma ED Rate",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#FDE724", width = 3, dash = "dash"),
+    marker = list(size = 8, symbol = "square"),
+    yaxis = "y2",
+    hovertemplate = paste(
+      '<b>Asthma ED Rate</b><br>',
+      'Year: %{x}<br>',
+      'Rate: %{y:.1f} per 10,000<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  layout(
+    title = list(
+      text = "<b>Manhattan: PM2.5 and Asthma ED Rates (2009-2023)</b>",
+      font = list(size = 16)
+    ),
+    xaxis = list(title = "Year", tickfont = list(size = 12)),
+    yaxis = list(
+      title = "<b style='color:#440154'>PM2.5 (μg/m³)</b>",
+      titlefont = list(color = "#440154", size = 14),
+      tickfont = list(color = "#440154", size = 12),
+      side = "left"
+    ),
+    yaxis2 = list(
+      title = "<b style='color:#FDE724'>ED Visit Rate (per 10,000)</b>",
+      titlefont = list(color = "#FDE724", size = 14),
+      tickfont = list(color = "#FDE724", size = 12),
+      overlaying = "y",
+      side = "right"
+    ),
+    legend = list(
+      x = 0.02,
+      y = 0.98,
+      xanchor = "left",
+      yanchor = "top",
+      bgcolor = "rgba(255,255,255,0.8)",
+      bordercolor = "rgba(0,0,0,0.3)",
+      borderwidth = 1
+    ),
+    hovermode = "x unified",
+    plot_bgcolor = 'rgba(250,250,250,0.9)',
+    paper_bgcolor = 'white',
+    margin = list(r = 100, t = 60)
+  )
+```
+
+```{r dual-axis-bronx, fig.width=10, fig.height=5}
+# Bronx dual-axis plot
+bronx_data <- pm25_asthma_clean %>% filter(borough == "Bronx")
+
+plot_ly(bronx_data) %>%
+  add_trace(
+    x = ~year, 
+    y = ~pm25_annual,
+    name = "PM2.5",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#31688E", width = 3),
+    marker = list(size = 8),
+    yaxis = "y1",
+    hovertemplate = paste(
+      '<b>PM2.5</b><br>',
+      'Year: %{x}<br>',
+      'PM2.5: %{y:.2f} μg/m³<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  add_trace(
+    x = ~year,
+    y = ~asthma_rate,
+    name = "Asthma ED Rate",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#CC4678", width = 3, dash = "dash"),
+    marker = list(size = 8, symbol = "square"),
+    yaxis = "y2",
+    hovertemplate = paste(
+      '<b>Asthma ED Rate</b><br>',
+      'Year: %{x}<br>',
+      'Rate: %{y:.1f} per 10,000<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  layout(
+    title = list(
+      text = "<b>Bronx: PM2.5 and Asthma ED Rates (2009-2023)</b>",
+      font = list(size = 16)
+    ),
+    xaxis = list(title = "Year", tickfont = list(size = 12)),
+    yaxis = list(
+      title = "<b style='color:#31688E'>PM2.5 (μg/m³)</b>",
+      titlefont = list(color = "#31688E", size = 14),
+      tickfont = list(color = "#31688E", size = 12),
+      side = "left"
+    ),
+    yaxis2 = list(
+      title = "<b style='color:#CC4678'>ED Visit Rate (per 10,000)</b>",
+      titlefont = list(color = "#CC4678", size = 14),
+      tickfont = list(color = "#CC4678", size = 12),
+      overlaying = "y",
+      side = "right"
+    ),
+    legend = list(
+      x = 0.02,
+      y = 0.98,
+      xanchor = "left",
+      yanchor = "top",
+      bgcolor = "rgba(255,255,255,0.8)",
+      bordercolor = "rgba(0,0,0,0.3)",
+      borderwidth = 1
+    ),
+    hovermode = "x unified",
+    plot_bgcolor = 'rgba(250,250,250,0.9)',
+    paper_bgcolor = 'white',
+    margin = list(r = 100, t = 60)
+  )
+```
+
+```{r dual-axis-brooklyn, fig.width=10, fig.height=5}
+# Brooklyn dual-axis plot
+brooklyn_data <- pm25_asthma_clean %>% filter(borough == "Brooklyn")
+
+plot_ly(brooklyn_data) %>%
+  add_trace(
+    x = ~year, 
+    y = ~pm25_annual,
+    name = "PM2.5",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#35B779", width = 3),
+    marker = list(size = 8),
+    yaxis = "y1",
+    hovertemplate = paste(
+      '<b>PM2.5</b><br>',
+      'Year: %{x}<br>',
+      'PM2.5: %{y:.2f} μg/m³<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  add_trace(
+    x = ~year,
+    y = ~asthma_rate,
+    name = "Asthma ED Rate",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#F98E09", width = 3, dash = "dash"),
+    marker = list(size = 8, symbol = "square"),
+    yaxis = "y2",
+    hovertemplate = paste(
+      '<b>Asthma ED Rate</b><br>',
+      'Year: %{x}<br>',
+      'Rate: %{y:.1f} per 10,000<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  layout(
+    title = list(
+      text = "<b>Brooklyn: PM2.5 and Asthma ED Rates (2009-2023)</b>",
+      font = list(size = 16)
+    ),
+    xaxis = list(title = "Year", tickfont = list(size = 12)),
+    yaxis = list(
+      title = "<b style='color:#35B779'>PM2.5 (μg/m³)</b>",
+      titlefont = list(color = "#35B779", size = 14),
+      tickfont = list(color = "#35B779", size = 12),
+      side = "left"
+    ),
+    yaxis2 = list(
+      title = "<b style='color:#F98E09'>ED Visit Rate (per 10,000)</b>",
+      titlefont = list(color = "#F98E09", size = 14),
+      tickfont = list(color = "#F98E09", size = 12),
+      overlaying = "y",
+      side = "right"
+    ),
+    legend = list(
+      x = 0.02,
+      y = 0.98,
+      xanchor = "left",
+      yanchor = "top",
+      bgcolor = "rgba(255,255,255,0.8)",
+      bordercolor = "rgba(0,0,0,0.3)",
+      borderwidth = 1
+    ),
+    hovermode = "x unified",
+    plot_bgcolor = 'rgba(250,250,250,0.9)',
+    paper_bgcolor = 'white',
+    margin = list(r = 100, t = 60)
+  )
+```
+
+```{r dual-axis-queens, fig.width=10, fig.height=5}
+# Queens dual-axis plot
+queens_data <- pm25_asthma_clean %>% filter(borough == "Queens")
+
+plot_ly(queens_data) %>%
+  add_trace(
+    x = ~year, 
+    y = ~pm25_annual,
+    name = "PM2.5",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#1F9E89", width = 3),
+    marker = list(size = 8),
+    yaxis = "y1",
+    hovertemplate = paste(
+      '<b>PM2.5</b><br>',
+      'Year: %{x}<br>',
+      'PM2.5: %{y:.2f} μg/m³<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  add_trace(
+    x = ~year,
+    y = ~asthma_rate,
+    name = "Asthma ED Rate",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#E16462", width = 3, dash = "dash"),
+    marker = list(size = 8, symbol = "square"),
+    yaxis = "y2",
+    hovertemplate = paste(
+      '<b>Asthma ED Rate</b><br>',
+      'Year: %{x}<br>',
+      'Rate: %{y:.1f} per 10,000<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  layout(
+    title = list(
+      text = "<b>Queens: PM2.5 and Asthma ED Rates (2009-2023)</b>",
+      font = list(size = 16)
+    ),
+    xaxis = list(title = "Year", tickfont = list(size = 12)),
+    yaxis = list(
+      title = "<b style='color:#1F9E89'>PM2.5 (μg/m³)</b>",
+      titlefont = list(color = "#1F9E89", size = 14),
+      tickfont = list(color = "#1F9E89", size = 12),
+      side = "left"
+    ),
+    yaxis2 = list(
+      title = "<b style='color:#E16462'>ED Visit Rate (per 10,000)</b>",
+      titlefont = list(color = "#E16462", size = 14),
+      tickfont = list(color = "#E16462", size = 12),
+      overlaying = "y",
+      side = "right"
+    ),
+    legend = list(
+      x = 0.02,
+      y = 0.98,
+      xanchor = "left",
+      yanchor = "top",
+      bgcolor = "rgba(255,255,255,0.8)",
+      bordercolor = "rgba(0,0,0,0.3)",
+      borderwidth = 1
+    ),
+    hovermode = "x unified",
+    plot_bgcolor = 'rgba(250,250,250,0.9)',
+    paper_bgcolor = 'white',
+    margin = list(r = 100, t = 60)
+  )
+```
+
+```{r dual-axis-staten-island, fig.width=10, fig.height=5}
+# Staten Island dual-axis plot
+staten_data <- pm25_asthma_clean %>% filter(borough == "Staten Island")
+
+plot_ly(staten_data) %>%
+  add_trace(
+    x = ~year, 
+    y = ~pm25_annual,
+    name = "PM2.5",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#B5DE2B", width = 3),
+    marker = list(size = 8),
+    yaxis = "y1",
+    hovertemplate = paste(
+      '<b>PM2.5</b><br>',
+      'Year: %{x}<br>',
+      'PM2.5: %{y:.2f} μg/m³<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  add_trace(
+    x = ~year,
+    y = ~asthma_rate,
+    name = "Asthma ED Rate",
+    type = "scatter",
+    mode = "lines+markers",
+    line = list(color = "#FCA50A", width = 3, dash = "dash"),
+    marker = list(size = 8, symbol = "square"),
+    yaxis = "y2",
+    hovertemplate = paste(
+      '<b>Asthma ED Rate</b><br>',
+      'Year: %{x}<br>',
+      'Rate: %{y:.1f} per 10,000<br>',
+      '<extra></extra>'
+    )
+  ) %>%
+  layout(
+    title = list(
+      text = "<b>Staten Island: PM2.5 and Asthma ED Rates (2009-2023)</b>",
+      font = list(size = 16)
+    ),
+    xaxis = list(title = "Year", tickfont = list(size = 12)),
+    yaxis = list(
+      title = "<b style='color:#B5DE2B'>PM2.5 (μg/m³)</b>",
+      titlefont = list(color = "#B5DE2B", size = 14),
+      tickfont = list(color = "#B5DE2B", size = 12),
+      side = "left"
+    ),
+    yaxis2 = list(
+      title = "<b style='color:#FCA50A'>ED Visit Rate (per 10,000)</b>",
+      titlefont = list(color = "#FCA50A", size = 14),
+      tickfont = list(color = "#FCA50A", size = 12),
+      overlaying = "y",
+      side = "right"
+    ),
+    legend = list(
+      x = 0.02,
+      y = 0.98,
+      xanchor = "left",
+      yanchor = "top",
+      bgcolor = "rgba(255,255,255,0.8)",
+      bordercolor = "rgba(0,0,0,0.3)",
+      borderwidth = 1
+    ),
+    hovermode = "x unified",
+    plot_bgcolor = 'rgba(250,250,250,0.9)',
+    paper_bgcolor = 'white',
+    margin = list(r = 100, t = 60)
+  )
 ```
