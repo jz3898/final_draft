@@ -1,0 +1,202 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(plotly)
+library(viridis)
+pm25_asthma <- read_csv("data/merged_pm25_asthma.csv")
+glimpse(pm25_asthma)
+```
+
+```{r data-prep}
+# Prepare data for time-series analysis
+pm25_asthma_clean <- pm25_asthma %>%
+  mutate(
+    borough = factor(borough, 
+                     levels = c("Manhattan", "Bronx", "Brooklyn", 
+                                "Queens", "Staten Island"))
+  ) %>%
+  arrange(year, borough)
+
+# Create a summary table
+summary_stats <- pm25_asthma_clean %>%
+  group_by(borough) %>%
+  summarise(
+    mean_pm25 = mean(pm25_annual, na.rm = TRUE),
+    mean_asthma = mean(asthma_rate, na.rm = TRUE),
+    n_years = n()
+  )
+
+knitr::kable(summary_stats, digits = 2, 
+             caption = "Summary Statistics by Borough")
+```
+
+```{r pm25-timeseries, fig.width=10, fig.height=6}
+# Interactive time-series plot of PM2.5 by borough
+p1 <- pm25_asthma_clean %>%
+  plot_ly(x = ~year, y = ~pm25_annual, color = ~borough,
+          type = 'scatter', mode = 'lines+markers',
+          colors = viridis(5),
+          hovertemplate = paste(
+            '<b>%{fullData.name}</b><br>',
+            'Year: %{x}<br>',
+            'PM2.5: %{y:.2f} μg/m³<br>',
+            '<extra></extra>'
+          )) %>%
+  layout(
+    title = list(
+      text = "<b>Annual PM2.5 Concentrations by Borough (2009-2023)</b>",
+      font = list(size = 16)
+    ),
+    xaxis = list(
+      title = "Year",
+      tickfont = list(size = 12),
+      gridcolor = 'rgba(200,200,200,0.3)'
+    ),
+    yaxis = list(
+      title = "PM2.5 (μg/m³)",
+      tickfont = list(size = 12),
+      gridcolor = 'rgba(200,200,200,0.3)'
+    ),
+    hovermode = 'closest',
+    legend = list(
+      title = list(text = '<b>Borough</b>'),
+      orientation = 'v',
+      x = 1.02,
+      y = 1
+    ),
+    plot_bgcolor = 'rgba(250,250,250,0.9)',
+    paper_bgcolor = 'white',
+    margin = list(r = 150)
+  )
+
+p1
+```
+
+```{r asthma-timeseries, fig.width=10, fig.height=6}
+# Interactive time-series plot of asthma ED visit rates by borough
+p2 <- pm25_asthma_clean %>%
+  plot_ly(x = ~year, y = ~asthma_rate, color = ~borough,
+          type = 'scatter', mode = 'lines+markers',
+          colors = viridis(5, option = "plasma"),
+          hovertemplate = paste(
+            '<b>%{fullData.name}</b><br>',
+            'Year: %{x}<br>',
+            'ED Visit Rate: %{y:.1f} per 10,000<br>',
+            '<extra></extra>'
+          )) %>%
+  layout(
+    title = list(
+      text = "<b>Asthma Emergency Department Visit Rates by Borough (2009-2023)</b>",
+      font = list(size = 16)
+    ),
+    xaxis = list(
+      title = "Year",
+      tickfont = list(size = 12),
+      gridcolor = 'rgba(200,200,200,0.3)'
+    ),
+    yaxis = list(
+      title = "ED Visit Rate (per 10,000 population)",
+      tickfont = list(size = 12),
+      gridcolor = 'rgba(200,200,200,0.3)'
+    ),
+    hovermode = 'closest',
+    legend = list(
+      title = list(text = '<b>Borough</b>'),
+      orientation = 'v',
+      x = 1.02,
+      y = 1
+    ),
+    plot_bgcolor = 'rgba(250,250,250,0.9)',
+    paper_bgcolor = 'white',
+    margin = list(r = 150)
+  )
+
+p2
+```
+
+```{r combined-view, fig.width=10, fig.height=8}
+# Combined subplot showing both metrics - FIXED VERSION
+combined_plot <- subplot(
+  p1 %>% layout(showlegend = TRUE),
+  p2 %>% layout(showlegend = FALSE),
+  nrows = 2,
+  shareX = FALSE,  # Changed from TRUE to FALSE so x-axis labels show
+  titleY = TRUE,
+  margin = 0.08
+) %>%
+  layout(
+    title = list(
+      text = "<b>Air Quality and Asthma Trends in NYC Boroughs</b>",
+      font = list(size = 18)
+    ),
+    height = 800,
+    xaxis = list(title = "Year"),  # Add x-axis title for top plot
+    xaxis2 = list(title = "Year")  # Add x-axis title for bottom plot
+  )
+
+combined_plot
+```
+
+```{r seasonal-comparison, fig.width=10, fig.height=6}
+# Additional analysis: Seasonal PM2.5 comparison
+pm25_seasonal <- pm25_asthma_clean %>%
+  select(year, borough, pm25_summer, pm25_winter) %>%
+  pivot_longer(cols = c(pm25_summer, pm25_winter),
+               names_to = "season",
+               values_to = "pm25_value") %>%
+  mutate(season = recode(season,
+                         "pm25_summer" = "Summer",
+                         "pm25_winter" = "Winter"))
+
+p3 <- pm25_seasonal %>%
+  plot_ly(x = ~year, y = ~pm25_value, color = ~borough,
+          linetype = ~season,
+          type = 'scatter', mode = 'lines',
+          colors = viridis(5),
+          hovertemplate = paste(
+            '<b>%{fullData.name}</b><br>',
+            'Season: %{fullData.linetype}<br>',
+            'Year: %{x}<br>',
+            'PM2.5: %{y:.2f} μg/m³<br>',
+            '<extra></extra>'
+          )) %>%
+  layout(
+    title = list(
+      text = "<b>Seasonal PM2.5 Variations by Borough</b>",
+      font = list(size = 16)
+    ),
+    xaxis = list(title = "Year"),
+    yaxis = list(title = "PM2.5 (μg/m³)"),
+    legend = list(
+      title = list(text = '<b>Borough & Season</b>'),
+      x = 1.02,
+      y = 1
+    ),
+    margin = list(r = 200)
+  )
+
+p3
+```
+
+```{r trend-analysis}
+# Calculate year-over-year changes
+trends <- pm25_asthma_clean %>%
+  group_by(borough) %>%
+  arrange(year) %>%
+  mutate(
+    pm25_change = pm25_annual - lag(pm25_annual),
+    asthma_change = asthma_rate - lag(asthma_rate)
+  ) %>%
+  filter(!is.na(pm25_change))
+
+# Summary of trends
+trend_summary <- trends %>%
+  summarise(
+    avg_pm25_change = mean(pm25_change, na.rm = TRUE),
+    avg_asthma_change = mean(asthma_change, na.rm = TRUE),
+    correlation = cor(pm25_change, asthma_change, use = "complete.obs")
+  )
+
+knitr::kable(trend_summary, digits = 3,
+             caption = "Average Annual Changes and Correlation by Borough")
+```
